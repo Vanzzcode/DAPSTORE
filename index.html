@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DafStore — Top Up Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050810;
+      --surface: #0d1220;
+      --card: #111827;
+      --border: #1e2d4a;
+      --accent-ff: #ff6b1a;
+      --accent-ml: #00d4ff;
+      --accent-rb: #22c55e;
+      --gold: #f5c518;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --glow-ff: rgba(255,107,26,0.35);
+      --glow-ml: rgba(0,212,255,0.35);
+      --glow-rb: rgba(34,197,94,0.35);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* BG GRID */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5,8,16,0.85);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 22px; font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, #00d4ff, #f5c518);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo span { color: #ff6b1a; -webkit-text-fill-color: #ff6b1a; }
+    .header-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      background: linear-gradient(90deg, var(--accent-ml), var(--accent-rb));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; z-index: 1;
+      text-align: center;
+      padding: 64px 24px 48px;
+    }
+    .hero-eyebrow {
+      font-size: 11px; letter-spacing: 3px; font-weight: 700;
+      color: var(--accent-ml); text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .hero h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 900; line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero p {
+      color: var(--muted); font-size: 15px; max-width: 420px; margin: 0 auto;
+    }
+
+    /* ── GAME TABS ── */
+    .game-tabs {
+      position: relative; z-index: 1;
+      display: flex; justify-content: center; gap: 12px;
+      padding: 0 24px 40px;
+      flex-wrap: wrap;
+    }
+    .game-tab {
+      cursor: pointer;
+      padding: 12px 28px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      background: var(--card);
+      font-family: 'Orbitron', monospace;
+      font-size: 13px; font-weight: 700; letter-spacing: 1px;
+      color: var(--muted);
+      transition: all .25s ease;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .game-tab img { width: 28px; height: 28px; border-radius: 6px; }
+    .game-tab:hover { border-color: currentColor; color: var(--text); transform: translateY(-2px); }
+    .game-tab.active[data-game="ff"]  { border-color: var(--accent-ff); color: var(--accent-ff); box-shadow: 0 0 20px var(--glow-ff); background: rgba(255,107,26,0.08); }
+    .game-tab.active[data-game="ml"]  { border-color: var(--accent-ml); color: var(--accent-ml); box-shadow: 0 0 20px var(--glow-ml); background: rgba(0,212,255,0.08); }
+    .game-tab.active[data-game="rb"]  { border-color: var(--accent-rb); color: var(--accent-rb); box-shadow: 0 0 20px var(--glow-rb); background: rgba(34,197,94,0.08); }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      position: relative; z-index: 1;
+      max-width: 960px; margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; animation: fadeUp .35s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── STEP LABEL ── */
+    .step-label {
+      font-size: 11px; letter-spacing: 2px; font-weight: 700;
+      text-transform: uppercase; margin-bottom: 8px;
+      opacity: 0.5;
+    }
+    .step-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 18px; font-weight: 700; margin-bottom: 24px;
+    }
+
+    /* ── FORM ── */
+    .topup-form {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 28px;
+    }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group.full { grid-column: 1/-1; }
+
+    label {
+      font-size: 12px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--muted);
+    }
+    input[type="text"], input[type="number"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px; font-weight: 600;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus {
+      border-color: var(--current-accent, var(--accent-ml));
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.12);
+    }
+    input::placeholder { color: var(--muted); font-weight: 400; }
+
+    /* ── PACKAGE GRID ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .toggle-custom {
+      font-size: 12px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; cursor: pointer;
+      color: var(--muted); text-decoration: underline;
+      transition: color .2s;
+    }
+    .toggle-custom:hover { color: var(--text); }
+
+    .packages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .pkg-card {
+      cursor: pointer;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      transition: all .2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .pkg-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 0%, var(--pkg-glow, rgba(0,212,255,0.1)), transparent 65%);
+      opacity: 0; transition: opacity .2s;
+    }
+    .pkg-card:hover { transform: translateY(-3px); border-color: var(--pkg-accent, var(--accent-ml)); }
+    .pkg-card:hover::before { opacity: 1; }
+    .pkg-card.selected { border-color: var(--pkg-accent, var(--accent-ml)); background: var(--pkg-bg, rgba(0,212,255,0.06)); }
+    .pkg-card.selected::before { opacity: 1; }
+
+    .pkg-badge {
+      position: absolute; top: 8px; right: 8px;
+      font-size: 9px; font-weight: 800; letter-spacing: 1px;
+      text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+      background: var(--gold); color: #000;
+    }
+    .pkg-icon { font-size: 26px; margin-bottom: 6px; }
+    .pkg-amount {
+      font-family: 'Orbitron', monospace;
+      font-size: 18px; font-weight: 900;
+      color: var(--pkg-accent, var(--accent-ml));
+      margin-bottom: 2px;
+    }
+    .pkg-unit { font-size: 11px; color: var(--muted); letter-spacing: 1px; font-weight: 600; margin-bottom: 8px; }
+    .pkg-price { font-size: 14px; font-weight: 700; color: var(--text); }
+
+    /* custom amount box */
+    .custom-box {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: none;
+      margin-bottom: 20px;
+    }
+    .custom-box.show { display: block; animation: fadeUp .25s ease; }
+
+    /* ── SUMMARY ── */
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px; font-weight: 600;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row.total { font-size: 17px; font-weight: 800; }
+    .summary-label { color: var(--muted); }
+    .summary-value { color: var(--text); }
+    .summary-value.price { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 16px; }
+
+    /* ── BUTTON ── */
+    .btn-send {
+      width: 100%; padding: 16px;
+      border: none; border-radius: 12px;
+      font-family: 'Orbitron', monospace;
+      font-size: 14px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: transform .15s, box-shadow .2s;
+    }
+    .btn-send::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.12);
+      opacity: 0; transition: opacity .2s;
+    }
+    .btn-send:hover { transform: translateY(-2px); }
+    .btn-send:hover::after { opacity: 1; }
+    .btn-send:active { transform: scale(0.98); }
+
+    .btn-ff  { background: linear-gradient(135deg, #ff6b1a, #ff3d00); box-shadow: 0 4px 24px var(--glow-ff); color: #fff; }
+    .btn-ml  { background: linear-gradient(135deg, #00d4ff, #0057e7); box-shadow: 0 4px 24px var(--glow-ml); color: #fff; }
+    .btn-rb  { background: linear-gradient(135deg, #22c55e, #059669); box-shadow: 0 4px 24px var(--glow-rb); color: #fff; }
+
+    .btn-icon { margin-right: 10px; font-size: 18px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #1a2a1a; border: 1px solid var(--accent-rb);
+      color: var(--accent-rb); padding: 12px 24px;
+      border-radius: 10px; font-weight: 700; font-size: 14px;
+      transition: transform .3s ease;
+      z-index: 999; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative; z-index: 1;
+      text-align: center; padding: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 13px;
+    }
+    footer a { color: var(--accent-ml); text-decoration: none; }
+    
+    div {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">DAF<span>STORE</span></div>
+  <div class="header-badge">⚡ Top Up Instan</div>
+</header>
+
+<div class="hero">
+  <div class="hero-eyebrow">🎮 Platform Top Up Terpercaya</div>
+  <h1>Top Up Game<br><span>Cepat & Aman</span></h1>
+  <p>Top up diamond, gem, dan token game favoritmu dalam hitungan menit langsung via WhatsApp admin.</p>
+</div>
+
+<div class="game-tabs">
+  <div class="game-tab active" data-game="ff" onclick="switchGame('ff')">🔥 Free Fire
+  </div>
+  <div class="game-tab" data-game="ml" onclick="switchGame('ml')">
+    ⚔️ Mobile Legends
+  </div>
+  <div class="game-tab" data-game="rb" onclick="switchGame('rb')">
+    🎮 Roblox
+  </div>
+</div>
+
+<main>
+
+  <!-- ═══ FREE FIRE PANEL ═══ -->
+  <div class="panel active" id="panel-ff">
+
+    <div class="topup-form">
+      <div class="step-label">Langkah 1</div>
+      <div class="step-title">Masukkan Data Akun</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Player ID</label>
+          <input type="number" id="ff-id" placeholder="Contoh: 123456789" />
+        </div>
+        <div class="form-group">
+          <label>Nickname (opsional)</label>
+          <input type="text" id="ff-nick" placeholder="Nama User/nickname" />
+        </div>
+      </div>
+    </div>
+
+    <div class="topup-form">
+      <div class="step-label">Langkah 2</div>
+      <div class="section-header">
+        <div class="step-title" style="margin-bottom:0">Pilih Paket Diamond</div>
+        <div class="toggle-custom" onclick="toggleCustom('ff')"></div>
+      </div>
+
+      <div class="packages-grid" id="pkgs-ff" style="--pkg-accent: var(--accent-ff); --pkg-glow: var(--glow-ff); --pkg-bg: rgba(255,107,26,0.06);">
+        <div class="pkg-card" onclick="selectPkg(this,'ff',100,'Rp 20.000')">
+          <div class="pkg-icon">💎</div>
+          <div class="pkg-amount">100</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 15.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'ff',150,'Rp 20.000')">
+          <div class="pkg-icon">💎</div>
+          <div class="pkg-amount">150</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 20.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'ff',200,'Rp 25.000')">
+          <div class="pkg-badge">POPULER</div>
+          <div class="pkg-icon">💎</div>
+          <div class="pkg-amount">200</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 25.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'ff',300,'Rp 35.000')">
+          <div class="pkg-icon">💎</div>
+          <div class="pkg-amount">300</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 35.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'ff',500,'Rp 40.000')">
+          <div class="pkg-badge">VALUE</div>
+          <div class="pkg-icon">💎</div>
+          <div class="pkg-amount">500</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 40.000</div>
+        </div>
+      </div>
+
+      <div class="custom-box" id="custom-ff">
+        <div class="form-group">
+          <label>Jumlah Diamond (Manual)</label>
+          <input type="number" id="ff-custom-amt" placeholder="Misal: 500" min="1" oninput="onCustomInput('ff')" />
+        </div>
+        <div class="form-group" style="margin-top:12px">
+          <label>Harga yang Disepakati (Rp)</label>
+          <input type="number" id="ff-custom-price" placeholder="Misal: 90000" min="0" oninput="onCustomInput('ff')" />
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card" id="summary-ff">
+      <div class="summary-row"><span class="summary-label">Game</span><span class="summary-value">Free Fire 🔥</span></div>
+      <div class="summary-row"><span class="summary-label">Player ID</span><span class="summary-value" id="sum-ff-id">-</span></div>
+      <div class="summary-row"><span class="summary-label">Nickname</span><span class="summary-value" id="sum-ff-nick">-</span></div>
+      <div class="summary-row"><span class="summary-label">Paket</span><span class="summary-value" id="sum-ff-pkg">Belum dipilih</span></div>
+      <div class="summary-row total"><span class="summary-label">Total</span><span class="summary-value price" id="sum-ff-price">Rp -</span></div>
+    </div>
+
+    <button class="btn-send btn-ff" onclick="sendToWA('ff')">
+      <span class="btn-icon">📲</span> Kirim ke WhatsApp Admin
+    </button>
+  </div>
+
+  <!-- ═══ MOBILE LEGENDS PANEL ═══ -->
+  <div class="panel" id="panel-ml">
+
+    <div class="topup-form">
+      <div class="step-label">Langkah 1</div>
+      <div class="step-title">Masukkan Data Akun</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>User ID</label>
+          <input type="number" id="ml-id" placeholder="Contoh: 123456789" />
+        </div>
+        <div class="form-group">
+          <label>Zone ID</label>
+          <input type="number" id="ml-zone" placeholder="Contoh: 1234" />
+        </div>
+      </div>
+    </div>
+
+    <div class="topup-form">
+      <div class="step-label">Langkah 2</div>
+      <div class="section-header">
+        <div class="step-title" style="margin-bottom:0">Pilih Paket Diamond</div>
+        <div class="toggle-custom" onclick="toggleCustom('ml')"></div>
+      </div>
+
+      <div class="packages-grid" id="pkgs-ml" style="--pkg-accent: var(--accent-ml); --pkg-glow: var(--glow-ml); --pkg-bg: rgba(0,212,255,0.06);">
+        <div class="pkg-card" onclick="selectPkg(this,'ml',100,'Rp 10.000')">
+          <div class="pkg-icon"><img src="dmml.png" width="50" height="50"></div>
+          <div class="pkg-amount">100</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 10.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'ml',200,'Rp 20.000')">
+          <div class="pkg-icon"><img src="dmml.png" width="50" height="50"></div>
+          <div class="pkg-amount">200</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 20.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'ml',300,'Rp 30.000')">
+          <div class="pkg-badge">POPULER</div>
+          <div class="pkg-icon"><img src="dmml.png" width="50" height="50"></div>
+          <div class="pkg-amount">300</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 30.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'ml',350,'Rp 35.000')">
+          <div class="pkg-icon"><img src="dmml.png" width="50" height="50"></div>
+          <div class="pkg-amount">350</div>
+          <div class="pkg-unit">Diamonds</div>
+          <div class="pkg-price">Rp 35.000</div>
+        </div>
+      </div>
+
+      <div class="custom-box" id="custom-ml">
+        <div class="form-group">
+          <label>Jumlah Diamond (Manual)</label>
+          <input type="number" id="ml-custom-amt" placeholder="Misal: 500" min="1" oninput="onCustomInput('ml')" />
+        </div>
+        <div class="form-group" style="margin-top:12px">
+          <label>Harga yang Disepakati (Rp)</label>
+          <input type="number" id="ml-custom-price" placeholder="Misal: 90000" min="0" oninput="onCustomInput('ml')" />
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card" id="summary-ml">
+      <div class="summary-row"><span class="summary-label">Game</span><span class="summary-value">Mobile Legends ⚔️</span></div>
+      <div class="summary-row"><span class="summary-label">User ID</span><span class="summary-value" id="sum-ml-id">-</span></div>
+      <div class="summary-row"><span class="summary-label">Zone ID</span><span class="summary-value" id="sum-ml-zone">-</span></div>
+      <div class="summary-row"><span class="summary-label">Paket</span><span class="summary-value" id="sum-ml-pkg">Belum dipilih</span></div>
+      <div class="summary-row total"><span class="summary-label">Total</span><span class="summary-value price" id="sum-ml-price">Rp -</span></div>
+    </div>
+
+    <button class="btn-send btn-ml" onclick="sendToWA('ml')">
+      <span class="btn-icon">📲</span> Kirim ke WhatsApp Admin
+    </button>
+  </div>
+
+  <!-- ═══ ROBLOX PANEL ═══ -->
+  <div class="panel" id="panel-rb">
+
+    <div class="topup-form">
+      <div class="step-label">Langkah 1</div>
+      <div class="step-title">Masukkan Data Akun</div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Username Roblox</label>
+          <input type="text" id="rb-user" placeholder="Contoh: HorrorBacon895" />
+        </div>
+      </div>
+    </div>
+
+    <div class="topup-form">
+      <div class="step-label">Langkah 2</div>
+      <div class="section-header">
+        <div class="step-title" style="margin-bottom:0">Pilih Paket Robux</div>
+        <div class="toggle-custom" onclick="toggleCustom('rb')"></div>
+      </div>
+
+      <div class="packages-grid" id="pkgs-rb" style="--pkg-accent: var(--accent-rb); --pkg-glow: var(--glow-rb); --pkg-bg: rgba(34,197,94,0.06);">
+        <div class="pkg-card" onclick="selectPkg(this,'rb',80,'Rp 15.000')">
+          <div class="pkg-icon"><img src="robux.png" width="50" height="50"></div>
+          <div class="pkg-amount">80</div>
+          <div class="pkg-unit">Robux</div>
+          <div class="pkg-price">Rp 15.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'rb',100,'Rp 20.000')">
+          <div class="pkg-icon"><img src="robux.png" width="50" height="50"></div>
+          <div class="pkg-amount">100</div>
+          <div class="pkg-unit">Robux</div>
+          <div class="pkg-price">Rp 20.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'rb',200,'Rp 30.000')">
+          <div class="pkg-badge">POPULER</div>
+          <div class="pkg-icon"><img src="robux.png" width="50" height="50"></div>
+          <div class="pkg-amount">200</div>
+          <div class="pkg-unit">Robux</div>
+          <div class="pkg-price">Rp 30.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'rb',400,'Rp 45.000')">
+          <div class="pkg-badge">VALUE</div>
+          <div class="pkg-icon"><img src="robux.png" width="50" height="50"></div>
+          <div class="pkg-amount">400</div>
+          <div class="pkg-unit">Robux</div>
+          <div class="pkg-price">Rp 45.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'rb',500,'Rp 50.000')">
+          <div class="pkg-icon"><img src="robux.png" width="50" height="50"></div>
+          <div class="pkg-amount">500</div>
+          <div class="pkg-unit">Robux</div>
+          <div class="pkg-price">Rp 50.000</div>
+        </div>
+        <div class="pkg-card" onclick="selectPkg(this,'rb',1000,'Rp 66.000')">
+          <div class="pkg-icon"><img src="robux.png" width="50" height="50"></div>
+          <div class="pkg-amount">1000</div>
+          <div class="pkg-unit">Robux</div>
+          <div class="pkg-price">Rp 66.000</div>
+        </div>
+      </div>
+
+      <div class="custom-box" id="custom-rb">
+        <div class="form-group">
+          <label>Jumlah Robux (Manual)</label>
+          <input type="number" id="rb-custom-amt" placeholder="Misal: 1000" min="1" oninput="onCustomInput('rb')" />
+        </div>
+        <div class="form-group" style="margin-top:12px">
+          <label>Harga yang Disepakati (Rp)</label>
+          <input type="number" id="rb-custom-price" placeholder="Misal: 130000" min="0" oninput="onCustomInput('rb')"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card" id="summary-rb">
+      <div class="summary-row"><span class="summary-label">Game</span><span class="summary-value">Roblox 🎮</span></div>
+      <div class="summary-row"><span class="summary-label">Username</span><span class="summary-value" id="sum-rb-user">-</span></div>
+      <div class="summary-row"><span class="summary-label">Paket</span><span class="summary-value" id="sum-rb-pkg">Belum dipilih</span></div>
+      <div class="summary-row total"><span class="summary-label">Total</span><span class="summary-value price" id="sum-rb-price">Rp -</span></div>
+    </div>
+
+    <button class="btn-send btn-rb" onclick="sendToWA('rb')">
+      <span class="btn-icon">📲</span> Kirim ke WhatsApp Admin
+    </button>
+  </div>
+
+</main>
+
+<footer>
+  Dibuat oleh <a href="#">Vanzzcode | DafStore</a> · CS 24/7 via WhatsApp, mau lihat satistik? <a>Click me!</a>
+</footer>
+
+<div class="toast" id="toast">⚠️ Harap lengkapi data terlebih dahulu!</div>
+
+<script>
+  const ADMIN_WA = '628131162746';
+
+  const state = {
+    ff:  { pkg: null, price: null, custom: false },
+    ml:  { pkg: null, price: null, custom: false },
+    rb:  { pkg: null, price: null, custom: false },
+  };
+
+  function switchGame(game) {
+    document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.game-tab[data-game="${game}"]`).classList.add('active');
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${game}`).classList.add('active');
+  }
+
+  function selectPkg(el, game, amount, price) {
+    document.querySelectorAll(`#pkgs-${game} .pkg-card`).forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    state[game].pkg = amount;
+    state[game].price = price;
+    state[game].custom = false;
+    // hide custom box
+    document.getElementById(`custom-${game}`).classList.remove('show');
+    updateSummary(game);
+  }
+
+  function toggleCustom(game) {
+    const box = document.getElementById(`custom-${game}`);
+    const show = !box.classList.contains('show');
+    box.classList.toggle('show', show);
+    if (show) {
+      // deselect packages
+      document.querySelectorAll(`#pkgs-${game} .pkg-card`).forEach(c => c.classList.remove('selected'));
+      state[game].pkg = null; state[game].price = null; state[game].custom = true;
+      updateSummary(game);
+    }
+  }
+
+  function onCustomInput(game) {
+    const amt   = document.getElementById(`${game}-custom-amt`)?.value;
+    const price = document.getElementById(`${game}-custom-price`)?.value;
+    if (amt)   state[game].pkg   = amt + (game === 'rb' ? ' Robux' : ' Diamonds');
+    if (price) state[game].price = 'Rp ' + Number(price).toLocaleString('id-ID');
+    state[game].custom = true;
+    updateSummary(game);
+  }
+
+  function updateSummary(game) {
+    if (game === 'ff') {
+      const id   = document.getElementById('ff-id').value   || '-';
+      const nick = document.getElementById('ff-nick').value || '-';
+      document.getElementById('sum-ff-id').textContent   = id;
+      document.getElementById('sum-ff-nick').textContent = nick;
+      document.getElementById('sum-ff-pkg').textContent  = state.ff.pkg ? state.ff.pkg + ' Diamonds' : 'Belum dipilih';
+      document.getElementById('sum-ff-price').textContent = state.ff.price || 'Rp -';
+    }
+    if (game === 'ml') {
+      const id   = document.getElementById('ml-id').value   || '-';
+      const zone = document.getElementById('ml-zone').value || '-';
+      document.getElementById('sum-ml-id').textContent   = id;
+      document.getElementById('sum-ml-zone').textContent = zone;
+      document.getElementById('sum-ml-pkg').textContent  = state.ml.pkg ? state.ml.pkg + ' Diamonds' : 'Belum dipilih';
+      document.getElementById('sum-ml-price').textContent = state.ml.price || 'Rp -';
+    }
+    if (game === 'rb') {
+      const user = document.getElementById('rb-user').value || '-';
+      document.getElementById('sum-rb-user').textContent = user;
+      document.getElementById('sum-rb-pkg').textContent  = state.rb.pkg
+        ? (typeof state.rb.pkg === 'number' ? state.rb.pkg + ' Robux' : state.rb.pkg)
+        : 'Belum dipilih';
+      document.getElementById('sum-rb-price').textContent = state.rb.price || 'Rp -';
+    }
+  }
+
+  // live update summary on typing
+  ['ff-id','ff-nick'].forEach(id => document.getElementById(id)?.addEventListener('input', () => updateSummary('ff')));
+  ['ml-id','ml-zone'].forEach(id => document.getElementById(id)?.addEventListener('input', () => updateSummary('ml')));
+  document.getElementById('rb-user')?.addEventListener('input', () => updateSummary('rb'));
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function formatAmt(game) {
+    const p = state[game].pkg;
+    if (!p) return null;
+    if (typeof p === 'number') return p + (game === 'rb' ? ' Robux' : ' Diamonds');
+    return p;
+  }
+
+  function sendToWA(game) {
+    let msg = '';
+
+    if (game === 'ff') {
+      const id   = document.getElementById('ff-id').value.trim();
+      const nick = document.getElementById('ff-nick').value.trim();
+      if (!id) { showToast('⚠️ Player ID Free Fire wajib diisi!'); return; }
+      if (!state.ff.pkg) { showToast('⚠️ Pilih paket diamond terlebih dahulu!'); return; }
+      msg = `🔥 *TOP UP FREE FIRE*\n\n`
+          + `👤 Player ID : ${id}\n`
+          + `🎮 Nickname  : ${nick || '-'}\n`
+          + `💎 Paket     : ${formatAmt('ff')}\n`
+          + `💰 Total     : ${state.ff.price || '(harga manual)'}\n\n`
+          + `Mohon konfirmasi dan proses top up saya. Terima kasih! 🙏`;
+    }
+
+    if (game === 'ml') {
+      const id   = document.getElementById('ml-id').value.trim();
+      const zone = document.getElementById('ml-zone').value.trim();
+      if (!id || !zone) { showToast('⚠️ User ID & Zone ID wajib diisi!'); return; }
+      if (!state.ml.pkg) { showToast('⚠️ Pilih paket diamond terlebih dahulu!'); return; }
+      msg = `⚔️ *TOP UP MOBILE LEGENDS*\n\n`
+          + `👤 User ID   : ${id}\n`
+          + `🌐 Zone ID   : ${zone}\n`
+          + `💠 Paket     : ${formatAmt('ml')}\n`
+          + `💰 Total     : ${state.ml.price || '(harga manual)'}\n\n`
+          + `Mohon konfirmasi dan proses top up saya. Terima kasih! 🙏`;
+    }
+
+    if (game === 'rb') {
+      const user = document.getElementById('rb-user').value.trim();
+      if (!user) { showToast('⚠️ Username Roblox wajib diisi!'); return; }
+      if (!state.rb.pkg) { showToast('⚠️ Pilih paket Robux terlebih dahulu!'); return; }
+      msg = `🎮 *TOP UP ROBLOX*\n\n`
+          + `👤 Username  : ${user}\n`
+          + `🟢 Paket     : ${formatAmt('rb')}\n`
+          + `💰 Total     : ${state.rb.price || '(harga manual)'}\n\n`
+          + `Mohon konfirmasi dan proses top up saya. Terima kasih! 🙏`;
+    }
+
+    const url = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+  }
+</script>
+</body>
+</html>
